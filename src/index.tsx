@@ -16,7 +16,7 @@ import AppServer from "./AppServer";
 
 ReactDOM.hydrateRoot(
   document.getElementById("root") as HTMLElement,
-  <AppServer />
+  <AppServer instanceCard={[]} />
 );
 
 // If you want to start measuring performance in your app, pass a function

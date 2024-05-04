@@ -36,8 +36,25 @@ const ReadDirectoryContentToArray = (folderPath, array) => {
 ReadDirectoryContentToArray(`${staticPathRoot}/js`, bootstrapScripts);
 ReadDirectoryContentToArray(`${staticPathRoot}/css`, bootstrapCSS);
 
-app.get("/", (req, res) => {
-  const content = ReactDOMServer.renderToString(<AppServer />);
+app.get("/", async (req, res) => {
+  if (req) {
+    console.log("OK");
+  }
+  const instanceData = await fetch(
+    "https://api-dev.spheron.network/v1/compute-project/65d5043df16838001253897a/instances?skip=0&limit=6&topupReport=n&state=",
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${process.env.REACT_APP_JWT}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  const resp = await instanceData.json();
+  console.log("OKOK", resp);
+  const content = ReactDOMServer.renderToString(
+    <AppServer instanceCard={resp.extendedInstances} />
+  );
   const cssLinks = bootstrapCSS
     .map(
       (css) => `<link rel="stylesheet" href="${css.slice(9, css.listen)}" />`
@@ -48,7 +65,6 @@ app.get("/", (req, res) => {
     .map((js) => `<script src="/${js.slice(9, js.length)}" defer></script>`)
     .join("\n");
 
-  console.log("OKOK1", cssLinks);
   const html = `
     <!DOCTYPE html>
     <html lang="en">
