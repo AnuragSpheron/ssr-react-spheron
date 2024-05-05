@@ -12,8 +12,9 @@ const AppServer = ({ instanceCard }: { instanceCard: any[] }) => {
     <p onClick={() => console.log("OK")} className="text-red-500 text-4xl">
       {instanceCard.map((card) => (
         <InstanceCard
+          key={card._id}
           detailsPage={false}
-          onClick={() => console.log("OKOK")}
+          onClick={() => console.log("OKOK2")}
           name={card.name || ""}
           updatedAt={"24 Aug"}
           domainName={card?.latestUrlPreview || "" || ""}
