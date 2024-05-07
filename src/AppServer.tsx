@@ -1,47 +1,30 @@
 import React from "react";
-import {
-  InstanceCard,
-  InstanceCardType,
-  InstanceCardState,
-  InstanceCardScalingType,
-  InstanceDeploymentType,
-} from "@spheron/ui-library";
+import { Route, Routes } from "react-router-dom";
+import Home from "./pages/Home";
+import { Suspense, lazy } from "react";
 
-const AppServer = ({ instanceCard }: { instanceCard: any[] }) => {
-  return (
-    <p onClick={() => console.log("OK")} className="text-red-500 text-4xl">
-      {instanceCard.map((card) => (
-        <InstanceCard
-          key={card._id}
-          detailsPage={false}
-          onClick={() => console.log("OKOK2")}
-          name={card.name || ""}
-          updatedAt={"24 Aug"}
-          domainName={card?.latestUrlPreview || "" || ""}
-          region={card.region || ""}
-          instanceCardType={InstanceCardType.DEFAULT || ""}
-          id={card._id || ""}
-          scalingType={InstanceCardScalingType.AUTO}
-          instanceState={InstanceCardState.ACTIVE}
-          instanceType={InstanceDeploymentType.ACCELERATE}
-          totalPrice={
-            card.state.toLowerCase() === "failed" ||
-            card.state.toLowerCase() === "failed-start" ||
-            card.state.toLowerCase() === "closed" ||
-            card.state.toLowerCase() === "deprecated"
-              ? undefined
-              : card.defaultDailyTopup * 30
-          }
-          priceUnit="/mo"
-          discountBadgeText={
-            card?.discount ? `${card.discount.discountPercent}% OFF` : ""
-          }
-          isSelected={false}
-          onCheckboxClick={(isSelected) => {}}
-        />
-      ))}
-    </p>
-  );
+const About = lazy(
+  () => import("./pages/About" /* webpackChunkName:"about" */)
+);
+
+const LoadingScreen = () => {
+  return <div>Loading...</div>;
 };
 
-export default AppServer;
+function CustomRoute() {
+  return (
+    <Routes>
+      <Route element={<Home />} path="/" />
+      <Route
+        element={
+          <Suspense fallback={<>Loading..</>}>
+            <About />
+          </Suspense>
+        }
+        path="/about"
+      />
+    </Routes>
+  );
+}
+
+export default CustomRoute;

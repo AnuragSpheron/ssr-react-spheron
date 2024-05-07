@@ -3,7 +3,7 @@ import { tailwindPreset } from "@spheron/ui-library";
 module.exports = {
   presets: [tailwindPreset],
   content: [
-    "./src/*.{js,jsx,ts,tsx}",
+    "./src/pages/*.{js,jsx,ts,tsx}",
     "./public/index.html",
     "./node_modules/@spheron/ui-library/**/*.{js,jsx,ts,tsx}",
   ],
