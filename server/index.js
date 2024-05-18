@@ -1,17 +1,27 @@
-import express from "express";
+import ReactDOMServer from "react-dom/server";
+import { StaticRouter } from "react-router-dom/server";
+import Koa from "koa";
+import Router from "@koa/router";
+import cors from "@koa/cors";
+import bodyParser from "koa-bodyparser";
 import path from "path";
 import fs from "fs";
-import React from "react";
-import { StaticRouter } from "react-router-dom/server";
-import ReactDOMServer from "react-dom/server";
 import SSRWrapper from "../src/SSRWrapper";
+import React from "react";
+import serve from "koa-static";
 import AssetManifest from "../build/asset-manifest.json";
 
-const app = express();
+const app = new Koa();
+const router = new Router();
+const port = process.env.PORT || 3002;
 
-const PORT = process.env.PORT || 3002;
+app.use(cors());
+app.use(bodyParser());
+app.use(router.routes());
+app.use(router.allowedMethods());
+app.use(serve(path.join(__dirname, "../build")));
 
-const staticPathRoot = `../build/static`;
+const staticPathRoot = `/static`;
 
 let bootstrapScripts = [];
 const bootstrapCSS = [];
@@ -36,17 +46,8 @@ const ReadDirectoryContentToArray = (folderPath, array) => {
 ReadDirectoryContentToArray(`${staticPathRoot}/js`, bootstrapScripts);
 ReadDirectoryContentToArray(`${staticPathRoot}/css`, bootstrapCSS);
 
-app.use(
-  "/build/static",
-  express.static(path.join(__dirname, "../build/static"))
-);
-app.get("*", async (req, res) => {
-  if (req.url === "/about") {
-    bootstrapScripts = [
-      ...bootstrapScripts,
-      AssetManifest.files[`${req.url.split("/")[1]}.js`],
-    ];
-  }
+router.get("/", async (ctx) => {
+  console.log("OKOK", ctx);
   const instanceData = await fetch(
     "https://api-dev.spheron.network/v1/compute-project/65d5043df16838001253897a/instances?skip=0&limit=6&topupReport=n&state=",
     {
@@ -57,31 +58,39 @@ app.get("*", async (req, res) => {
       },
     }
   );
+
   const resp = await instanceData.json();
-
+  console.log(resp);
   const context = {};
+  await render(ctx, resp);
+});
+
+app.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
+});
+
+const render = (ctx, resp) => {
   let didError = false;
+  return new Promise((resolve, reject) => {
+    const stream = ReactDOMServer.renderToPipeableStream(
+      <StaticRouter location={ctx.url} context={{}}>
+        <SSRWrapper css={bootstrapCSS} response={resp.extendedInstances} />
+      </StaticRouter>,
 
-  const content = ReactDOMServer.renderToPipeableStream(
-    <StaticRouter location={req.url} context={{}}>
-      <SSRWrapper css={bootstrapCSS} response={resp.extendedInstances} />
-    </StaticRouter>,
-
-    {
-      bootstrapScripts,
-      onShellReady: () => {
-        res.statusCode = didError ? 500 : 200;
-        res.setHeader("Content-type", "text/html");
-        content.pipe(res);
-      },
-      onError: (error) => {
-        didError = true;
-        console.log("Error", error);
-      },
-    }
-  );
-});
-
-app.listen(PORT, () => {
-  console.log(`Server Running on PORT:${PORT}`);
-});
+      {
+        bootstrapScripts,
+        onShellReady() {
+          ctx.res.statusCode = didError ? 500 : 200;
+          ctx.set({ "Content-Type": "text/html" });
+          stream.pipe(ctx.res);
+          ctx.res.end();
+        },
+        onError: (error) => {
+          didError = true;
+          console.log("Error", error);
+          reject();
+        },
+      }
+    );
+  });
+};
